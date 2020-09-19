@@ -1,0 +1,637 @@
+\documentclass[11pt]{exam}
+\RequirePackage{amssymb, amsfonts, amsmath, latexsym, verbatim, xspace, setspace}
+\RequirePackage{tikz, pgflibraryplotmarks}
+\usetikzlibrary{shapes.geometric,arrows,fit,matrix,positioning}
+\tikzset
+{
+    treenode/.style = {circle, draw=black, align=center,
+                          minimum size=1cm, anchor=center},
+}
+
+
+
+\usepackage[none]{hyphenat}
+\usepackage[margin=1in]{geometry}
+\usepackage{algorithm}
+\usepackage{cancel}
+\usepackage{multirow}
+\usepackage{framed}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{qtree}
+\usepackage{venndiagram}
+\usepackage{mathtools}
+\usetikzlibrary{datavisualization}
+\usetikzlibrary{datavisualization.formats.functions}
+\newtheorem*{theorem*}{Theorem}
+\usepackage{pgfplots}
+\usepackage{ulem}
+\usepackage{listings}
+\usepackage{tikz}
+\usepackage[noend]{algpseudocode}
+\usetikzlibrary{arrows,automata,positioning}
+\usetikzlibrary{arrows,positioning,shapes,fit,calc}
+\usetikzlibrary{chains,fit,shapes}
+\usepackage{color}   %May be necessary if you want to color links
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true, %set true if you want colored links
+    linktoc=all,     %set to all if you want both sections and subsections linked
+    linkcolor=black,  %choose some color if you want links to stand out
+}
+
+\pgfdeclarelayer{background}
+\pgfsetlayers{background,main}
+
+\usepackage{color}
+\usepackage{bold-extra}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{
+	language=python, % Replace
+	basicstyle={\footnotesize\ttfamily},
+	keywordstyle={\bfseries\color{blue}},
+	commentstyle=\color{dkgreen},
+	stringstyle={\slshape\color{mauve}},
+	numberstyle=\footnotesize,
+	numbers=left,
+	showstringspaces=false,
+	breaklines=true,
+	tabsize=4,
+	frame=tb
+}
+
+
+\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+
+\newcommand{\idx}[2]{#1^{(#2)}}
+\newcommand{\idctr}[1]{1\{#1\}}
+
+\newcommand{\rowSpace}{1.2ex}
+\singlespacing
+ \newcommand\tab[1][1cm]{\hspace*{#1}}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{lemma}
+\begin{document} 
+
+\vspace*{20mm}
+ 
+\begin{center}
+\Huge{CS229 Machine Learning}\\
+
+\vspace{10mm}
+
+\Huge{Lecture Notes}\\
+
+\vspace{10mm}
+
+\large{Created by Blake Cecil}\\
+
+\end{center}
+
+
+
+\newpage 
+
+\section{Supervised learning}
+
+Notation $x^{(i)}$ is used to denote input variables, also called $\bf{features}$ and $y^{(i)}$ to denote output or $\bf{target}$ variables. A pairing $(x^{(i)},y^{(i)})$ is called a $\bf{training example}$ and the full data set we use for learning is a list of $m$ training examples which we call a $\bf{training set}$. We use $\mathcal{X},\mathcal{Y}$ to denote the space of inputs and outputs respectively. \\
+
+We can now describe the supervised learning problem more formally. Given a training set we aim to learn a function $h : \mathcal{X} \rightarrow \mathcal{Y}$ so that $h(x)$ is a good predictor of the corresponding value of $y$. We sometimes call this function $h$ the $\bf{hypothesis}$. \\
+
+When the target variable we're trying to predict is continous we call the problem a $\bf{regeression}$ problem, if it is discrete we call it a $\bf{classification}$ problem.\\
+
+\subsection{Linear Regression}
+In order to perform supervised learning we must come up with a sensible representation of the hypothesis. Suppose we choose the following simple representation approximating the target as a linear combination of the $\idx{x}{i}$'s and some parameters $\theta$
+
+\begin{align*}
+h_\theta (x) = \theta_0 + \theta_1x_1 + \dots \theta_nx_n
+\end{align*}
+
+The $\theta_i$'s are also called $\bf{weights}$. We can introduce the following more compact notation
+
+\begin{align*}
+h(x) = \sum_{i=0}^n \theta_ix_i = \theta^Tx
+\end{align*}
+
+in other words $h$ is simply the familiar dot product of two vectors. Now we reach the central question, how do we learn which values of $\theta$ are most appropriate? To answer this we need a way of quantifying how "good" a particular choice of theta is. We can do this by measuring how close each $h_\theta(\idx{x}{i})$ is to the corresponding $\idx{y}{i}$.
+
+\begin{align*}
+J(\theta) = \frac{1}{2}\sum_{i=1}^m(h_\theta(\idx{x}{i})-\idx{y}{i})^2
+\end{align*}
+
+This is know as a $\bf{cost function}$. The particular equation given here gives rise to the $\bf{ordinary \ least \ squares}$ model of regression.
+
+\subsection{LMS Algorithm}
+
+We want to minimize this cost function and will do so by searching through the space of possible choices for $\theta$. We employ a natural method from vector calculus to do so, $\bf{gradient \ descent}$.
+
+\begin{align*}
+\theta_j  := \theta_j - \alpha \frac{\partial J(\theta)}{\partial \theta_j}
+\end{align*}
+
+Where this rule is applied for all values of $j = 0 .. n$ where $n$ is the size of the data set. We also introduce $\alpha$ to be a specially tuned constant we call the $\bf{learning \ rate}$. Conceptually this algorithm takes the current point we are at and computes the direction of steepest decrease of $J$. All that remains is to derive the partial derivative of $J$. Instead we will handle the special case of one training example $(x,y)$.
+
+\begin{align*}
+\frac{\partial J(\theta)}{\partial \theta_j} &= \frac{\partial J(\theta)}{\partial \theta_j} \frac{1}{2} (h_\theta(x)-y)^2\\
+&= (h_\theta(x)-y) \frac{\partial J(\theta)}{\partial \theta_j} h_\theta(x)-y)\\
+&= (h_\theta(x)-y) \frac{\partial J(\theta)}{\partial \theta_j} \sum_{i=0}^n \theta_ix_i - y\\
+&=  (h_\theta(x)-y)x_j\\
+\end{align*} 
+
+So our update rule becomes
+
+\begin{align*}
+\theta_j  := \theta_j + \alpha(\idx{y}{i} - h_\theta(\idx{x}{i}))\idx{x_j}{i}
+\end{align*}
+
+This rule is known as the $\bf{LMS}$ update rule or $\bf{Widrow-Hoff}$ learning rule. Its basic properties are nice in the sense that the magnitude of the update is proportional to the error, i.e if we aren't very far off we only take small steps, and if we are far off we take larger ones. Despite the rule being applicable only to a single training example we can extend it in the following manner
+
+\begin{lstlisting}[mathescape=true] 
+Repeat until convergence {
+	$\theta_j  := \theta_j + \alpha \sum_{i=1}^m(\idx{y}{i} - h_\theta(\idx{x}{i}))\idx{x_j}{i} \ (\forall j)$
+}
+\end{lstlisting}
+
+Which gives us the gradient descent of the original function $J$. Notice that this method requires looking at the entire training set on every step, giving it the name $\bf{batch \ gradient \ descent}$. This has its payoffs however because the function is guaranteed to find the global minimum (this is because $J$ is a convex quadratic function).\\
+
+There is an alternative to batch gradient descent that avoids processing the entire set. This is called $\bf{stochastic \ gradient \ descent}$ or $\bf{incremental \ gradient \ descent}$, and is given in the following algorithm
+
+\begin{lstlisting}[mathescape=true] 
+Loop {
+	for i=1 to m {
+		$\theta_j  := \theta_j + \alpha(\idx{y}{i} - h_\theta(\idx{x}{i}))\idx{x_j}{i} \ (\forall j)$
+	}
+}
+\end{lstlisting}
+
+SGD can often converge quicker than BGD, but it is possible for it to never converge to a minimum despite getting close enough for practical purposes. Generally when large training sets are used SGD is preferred.
+
+
+\subsection{The Normal Equations}
+
+It turns out that in the special case of least squares, we can actually explicitly solve for the optimal value of $\theta$, but first we will need to introduce some notation to help with taking the matrix derivatives.
+
+\subsubsection{Matrix Derivatives}
+
+Let $f$ be a function $f : \mathbb{R}^{m \times n} \rightarrow \mathbb{R}$ mapping from matrices to real numbers, then we define the derivative of $f$ with respect to $A$ to be 
+
+\begin{align*}
+\nabla_Af(A) = \begin{bmatrix}
+\frac{\partial f}{\partial A_{11}} & \dots \frac{\partial f}{\partial A_{1n}}\\
+\vdots & \ddots & \vdots\\
+\frac{\partial f}{\partial A_{m1}} & \dots & \frac{\partial f}{\partial A_{mn}}\\
+\end{bmatrix}
+\end{align*}
+
+As we can see the gradient is itself a $m \times n$ matrix. 
+We now introduce the $\bf{trace}$ operator denoted "tr" and defined on square matrices as 
+\begin{align*}
+\text{tr}A = \sum_{i=1}^n A_{ii}
+\end{align*}
+
+We now state some useful identities about matrix derivatives without proof
+
+\begin{align*}
+\nabla_A \text{tr}AB &= B^T\\
+\nabla_{A^T} f(A) &= (\nabla_{A} f(A))^T\\
+\nabla_A \text{tr}ABA^TC &= CAB + C^TAB^T\\
+\nabla_A |A| &= |A|(A^{-1})^T\\
+\end{align*}
+
+Where $B,C \in \mathbb{R}^{m \times n}$ are fixed matrices and  $|A|$ is the determinant of $A$.
+
+\subsubsection{Deriving the Normal Equations}
+
+We can now derive the normal equations by first reformulating the least squares problem in terms of matrix equations.
+Given the training set we define $X$ to be the $bf{design \ matrix}$ which is an $m \times n + 1$ matrix containing the training examples' inputs as its rows
+
+\begin{align*}
+X \begin{bmatrix}
+- (x^{(1)})^T - \\
+- (x^{(2)})^T - \\
+\dots\\
+- (x^{(m)})^T - \\
+\end{bmatrix}
+\end{align*}
+
+Let $\vec{y}$ be the $m$ dimensional vector containing all the target values from the training set
+
+\begin{align*}
+\vec{y} = \begin{bmatrix}
+\idx{y}{1}\\
+\idx{y}{2}\\
+\dots\\
+\idx{y}{m}\\
+\end{bmatrix}
+\end{align*}
+
+using the fact that $h_theta(\idx{x}{i}) = (\idx{x}{i})^T\theta$ we have that
+
+\begin{align*}
+X\theta - \vec{y} &= \begin{bmatrix}
+(\idx{x}{1})^T\theta\\
+(\idx{x}{2})^T\theta\\
+\dots\\
+(\idx{x}{m})^T\theta
+\end{bmatrix} - \begin{bmatrix}
+\idx{x}{i}\\
+\dots\\
+\idx{y}{m}
+\end{bmatrix}\\
+&= \begin{bmatrix}
+h_\theta(\idx{x}{1}) - \idx{y}{1}\\
+\dots\\
+h_\theta(\idx{x}{m}) - \idx{y}{m}\\
+\end{bmatrix}
+\end{align*}
+
+Finally we have that 
+
+\begin{align*}
+\frac{1}{2}(X\theta - \vec{y})^T(X\theta - \vec{y}) &= \frac{1}{2}\sum_{i=1}^m (h_\theta(\idx{x}{i} - \vec{y}^{(i)})^2\\
+&= J(\theta)
+\end{align*}
+
+Finally minimizing $J$ yields
+
+\begin{align*}
+\nabla_\theta J(\theta) &= X^TX\theta - X^T\vec{y}\\
+\end{align*}
+
+setting equal to 0 and solving for theta we obtain the normal equations 
+
+\begin{align*}
+\theta = (X^TX)^{-1}X^T\vec{y}
+\end{align*}
+
+
+\section{Locally Weighted Linear Regression }
+
+In locally weighted linear regression we aim to fit data that does not follow a linear relationship by trying to fit neighborhoods of the data instead of the whole set. The main change is that we now seek to minimize
+
+\begin{align*}
+\sum_{i=1}^m \idx{w}{i}(\idx{y}{i} - \theta^T\idx{x}{i})^2
+\end{align*} 
+
+here the $\idx{w}{i}$'s are non negative $\bf{weights}$, roughly speaking the larger the $\idx{w}{i}$'s the more we will try to fit that data point and the smaller the weight the less we try. A typical choice for the weights is
+
+\begin{align*}
+\idx{w}{i} = \text{exp}(-\frac{(\idx{x}{i} - x)^2}{2\tau^2})
+\end{align*}
+
+The weighting function depends on $x$ the particular point were trying to evaluate. This will bias our attention towards training examples close to $x$. $\tau$ helps tune the radius around $x$ that we are interested in and is called the $\bf{bandwidth}$ parameter. LWLR is the first example of a $\bf{non \ parametric}$ algorithm. This is a reference to the fact that our predictions are parameterized by the data set. In linear regression once the $\theta$'s were determined we could store them and no longer needed the testing data to make future predictions. With LWLR we need to keep the training set around, this means that the amount of information need to construct a hypothesis grows linearly with the size of the data set.
+
+\section{Classification and Logistic Regression}
+
+We now examine a new type of problem that leads naturally to logistic regression. Instead of the $\idx{y}{i}$'s taking on values in the reals, we consider only discrete values. Here we will examine the special case of only binary values i.e the $\bf{binary \ classification \ problem}$. Often 0 is called the $\bf{negative}$ class and 1 is called the $\bf{positive}$ class, given a particular $\idx{x}{i}, \idx{y}{i}$ is called the $\bf{label}$ for that example.
+
+This new problem requires a more appropriate hypothesis function called the $\bf{logistic \ function}$ or the $\bf{sigmoid \ function}$ 
+
+\begin{align*}
+h_\theta(x) = \frac{1}{1+e^{-\theta^Tx}}
+\end{align*}
+
+This function has the nice property of squishing its inputs into the range $[0,1]$. Before proceeding we first obtain the derivative of the sigmoid function as follows
+
+\begin{align*}
+g'(z) &= \frac{d}{dz} \frac{1}{1 + e^{-z}}\\
+      &= \frac{1}{(1 + e^{-z})^2}(e^{-z})\\
+      &= \frac{1}{(1 + e^{-z})}(1 - \frac{1}{1+e^{-z}})\\
+      &= g(z)(1-g(z))\\
+\end{align*}
+
+
+In order to best fit $\theta$ we derive the maximum likelihood estimator using the following assumptions
+
+\begin{align*}
+P(y = 1| x;\theta) &= h_\theta(x)\\
+P(y = 0| x;\theta) &= 1- h_\theta(x)\\
+\end{align*}
+
+This can be represented more compactly as
+
+\begin{align*}
+P(y | x;\theta) &= (h_\theta(x))^y(1- h_\theta(x))^{1-y}\\
+\end{align*}
+
+Assuming independence of the training examples we can calculate the likelihood of the parameters as follows
+
+\begin{align*}
+L(\theta) &= p(\vec{y} | X;\theta)\\
+          &= \prod_{i=1}^m  p(\idx{y}{i} | \idx{x}{i};\theta)\\
+          &= \prod_{i=1}^m(h_\theta(\idx{x}{i}))^{\idx{y}{i}}(1- h_\theta(\idx{x}{i}))^{1-\idx{y}{i}}\\
+\end{align*}
+
+It is easier to maximize the log likelihood so we define the new function
+
+\begin{align*}
+l(\theta) &= \log{L(\theta)}\\
+          &= \sum_{i=1}^m \idx{y}{i}\log{h(\idx{x}{i})} + (1-\idx{y}{i})\log{1 - h(\idx{x}{i})}
+\end{align*}
+
+Now since we are maximizing the likelihood we will perform gradient ascent with the following update $\theta := \theta + \alpha \nabla_\theta l(\theta)$. We will start by deriving the update rule for just one training example $(x,y)$
+
+\begin{align*}
+\frac{\partial}{\partial \theta_j} &= (y \frac{1}{g(\theta^Tx)} - (1-y)\frac{1}{1 - g(\theta^Tx)}) \frac{\partial}{\partial \theta_j} g(\theta^Tx)\\
+&= (y \frac{1}{g(\theta^Tx)} - (1-y)\frac{1}{1 - g(\theta^Tx)})g(\theta^Tx)(1-g(\theta^Tx)) \frac{\partial}{\partial \theta_j} g(\theta^Tx)\\
+&= (y(1-g(\theta^Tx)) - (1-y)g(\theta^Tx))x_j\\
+&= (y - h_\theta(x))x_j
+\end{align*}
+
+So we have the following stochastic gradient ascent rule
+
+\begin{align*}
+\theta_j := \theta_j + \alpha(\idx{y}{i} - h_\theta(\idx{x}{i}))\idx{x}{i}_j
+\end{align*}
+
+Note that this is only aesthetically similar to the rule for linear regression as the underlying hypothesis function is non linear.
+
+\subsection{Another Maximization Algorithm}
+
+There is a method besides gradient optimization that helps us solve the maximization problem, its key feature is that it enjoys much faster convergence. Consider Newton's method for finding the root of a function  $f : \mathbb{R} \rightarrow \mathbb{R}$. We seek to find $\theta \in \mathbb{R}$ such that $f(\theta) = 0$. Using newtons method we perform the following update
+
+\begin{align*}
+\theta := \theta - \frac{f(\theta)}{f'(\theta)}
+\end{align*}
+
+An intuitive way to interpret this algorithm is that it approximates $f$ near a point by using the line tangent to that point. It is then easy to determine where the tangent line has a root, and we take a step in that direction. 
+While this process lets us find a root, we can also use it to find optimum by starting the process with the derivative of the function we are interested in. In our case we substitute $f(\theta) = l'(\theta)$
+
+\begin{align*}
+\theta = \theta - \frac{l'(\theta)}{l''(\theta)}
+\end{align*}
+
+In the case we are interested in $\theta$ is vector valued so we require the following generalization
+
+\begin{align*}
+\theta := \theta - H^{-1}\nabla_\theta l(\theta)
+\end{align*}
+
+Where $H$ is the so called $\bf{Hessian}$ matrix whose entries are given by 
+
+\begin{align*}
+H_{ij} = \frac{\partial^2 l(\theta)}{\partial \theta_i \partial \theta_j}
+\end{align*}
+
+Newtons method can be useful because of its faster convergence, however the calculating and inverting the Hessian can be a very expensive operation, so one needs to consider whether $n$ is small enough for Newtons method to be considerably faster. When Newtons method is applied to maximize $l(\theta)$ the method is sometimes called $\bf{Fisher \ scoring}$.
+
+\section{Generalized Linear Models}
+
+So far we have seen two distinct flavors of learning, classification and regression. More formally the assumptions about the distributions of our data are what drive the need for different methods, and in this section we will establish this as a mathematical fact, rather than an intuition. This will be done by investigating a family of models called Generalized Linear Models (GLMs).
+
+\subsection{The Exponential Family}
+
+First we will work up to GLMs by defining the exponential family as follows
+\begin{align*}
+p(y;\eta) = b(y)\exp({\eta^TT(y) - a(\eta)})
+\end{align*}
+
+Here we call $\eta$ the \textbf{natural, canonical parameter} of the distribution, $T(y)$ is the \textbf{sufficient statistic} and $a(\eta)$ is the \textbf{log partition function}. The quantity $e^{-a(\eta)}$ ensures that the distribution sums to 1.
+
+For any fixed choice of $T$, $a$ and $b$ define an entire family of distributions parameterized by $\eta$. 
+
+We can now show that certain distributions are part of this family starting with the Bernoulli distribution. Given the mean $\phi$ we can specify a distribution over $y \in \{0,1\}$ so that 
+
+\begin{align*}
+p(y = 1; \phi) &= \phi \\
+p(y = 0; \phi) &= 1 - \phi \\
+\end{align*}
+
+Now we apply some algebra to get the distribution in a form we can pattern match against the exponential family equation.
+
+\begin{align*}
+p(y;\phi) &= \phi^y(1-\phi)^{1-y}\\
+          &= \exp{(y\log{\phi} + (1-y)\log({1 - \phi}))}\\
+          &= \exp({\log({\frac{\phi}{1-\phi}})y + \log({1 - \phi}))}\\ 
+\end{align*}
+
+We can now begin to match this will the exponential family components
+
+\begin{align*}
+\eta  &= \log(\frac{\phi}{1-\phi})\\
+T(y) &= y\\
+a(\eta) &= -\log(1 -\phi)\\
+        &= \log(1 + e^\eta)\\
+b(y)    &= 1
+\end{align*}
+
+Notice that if we solve for $\eta$ in terms of $\phi$ we derive the sigmoid function for logistic regression, something that is no coincidence.
+
+We can now apply the same procedure for a Gaussian distribution with $\sigma^2 = 1$
+
+\begin{align*}
+p(y;\mu) &= \frac{1}{\sqrt{2\pi}} \exp(-\frac{1}{2}(y - \mu)^2))\\
+&= \frac{1}{\sqrt{2\pi}} \exp(-\frac{1}{2}y^2) \exp(\mu y - \frac{1}{2}\mu^2)\\
+\end{align*}
+
+Which gives us the following settings for the exponential family parameters
+
+\begin{align*}
+\eta &= \mu\\
+T(y) &= y\\
+a(\eta) &= \frac{\mu^2}{2}\\
+        &= \frac{\eta^2}{2}\\
+b(y) &= \frac{1}{\sqrt{2\pi}}\exp(\frac{-y^2}{2}
+\end{align*}
+
+\subsection{Constructing GLM's}
+
+We will now generalize our approach even further allowing us solve classes of modeling problems just by picking a distribution that is appropriate for the data we are trying to model.
+
+Consider a classification or regression problem where we seek to predict the value of a random variable $y$ as a function of some input data $x$, to derive a GLM we will make some fundamental assumption about the conditional distribution of $y$ given $x$ and our model
+
+\begin{enumerate}
+\item $y | x;\theta ~$ ExponentialFamily$(\eta)$. I.e given $x$ and $\theta$ the distribution of $y$ follows some exponential family distribution.
+
+\item Given $x$ we seek to predict the expected value of $T(y)$. In most examples $T(y) = y$ so we want our prediction $h(x)$ to satisfy $h(x) = E[y|x]$.
+
+\item The natural parameter and $x$ are related linearly $\eta = \theta^Tx$.
+\end{enumerate}
+
+\subsubsection{Ordinary Least Squares}
+
+We can now derive ordinary least squares as a special case of the GLM family by assuming that $y$ is continuous and that $y|x;\theta$ is modeled by the Gaussian distribution, then we have that
+
+\begin{align*}
+h_\theta(x) &= E[y|x;\theta]\\
+&= \mu\\
+&= \eta\\
+&= \theta^Tx
+\end{align*}
+
+Note that the first equality follows from the Gaussian distribution, and the other 3 follow from facts derived or assumed above.
+
+\subsubsection{Logistic Regression}
+
+We can now derive logistic regression by assuming that $y \in \{0,1\}$ and modeling the conditional distribution by the Bernoulli distribution.\\
+
+\begin{align*}
+h_\theta(x) &= E[y|x;\theta]\\
+&= \phi\\
+&= \frac{1}{1 + e^{-\eta}}\\
+&= \frac{1}{1 + e^{-\theta^Tx}}\
+\end{align*} 
+
+\subsubsection{Softmax Regression}
+
+We can now look at a totally new example that arises from doing classification where the discrete response variable $y$ can take on one of $k$ values, i.e $y \in \{1,2, \dots, k\}$. We will model this using a multinomial distribution. We will parameterize over the $k$ possible outcomes using only $k-1$ parameters since the last outcome is always uniquely determined given all other outcomes. We define $\phi_1, \dots, \phi_{k-1}$ to be $\phi_k = p(y=i;\phi)$ and $\phi_k = p(y = k; \phi) = 1 - \sum_{i=1}^{k-1}\phi_i$, note that $\phi_k$ is not a parameter.
+
+We then define $T(y) \in \mathbb{R}^{k-1}$ as
+\begin{align*}
+T(1) = \begin{bmatrix}
+1\\
+0\\
+0\\
+\vdots
+0
+\end{bmatrix}
+,
+T(2) = \begin{bmatrix}
+0\\
+1\\
+0\\
+\vdots
+0
+\end{bmatrix}
+,
+\dots
+T(k-1) = \begin{bmatrix}
+0\\
+0\\
+0\\
+\vdots
+1
+\end{bmatrix}
+,
+T(k) = \begin{bmatrix}
+\\
+0\\
+0\\
+\vdots
+0
+\end{bmatrix}
+\end{align*}
+
+We no longer have that $T(y) = y$ and we will write $(T(y))_i$ to denote the $i$th element of the resulting vector. We can now show the multinomial is a member of the exponential family.
+
+\begin{align*}
+p(y;\phi) &= \phi_1^{\idctr{y=1}}\phi_2^{\idctr{y=2}}\dots\phi_k^{\idctr{y=k}}\\
+          &= \phi_1^{(T(y))_1}\phi_2^{(T(y))_2}\dots\phi_k^{1- \sum_{i=1}^{k-1}(T(y))_i}\\
+          &= \exp((T(y))_1\log(\phi_1) + \dots + (1 - \sum{i=1}^{k-1}(T(y))_i)\log(\phi_k))\\
+          &= \exp((T(y))_1\log(\phi_1/\phi_k) + \dots + log(\phi_k))\\
+\end{align*}
+
+Then we have that
+\begin{align*}
+\eta &= \begin{bmatrix}
+\log(\phi_1/\phi_k)\\
+\log(\phi_2/\phi_k)\\
+\vdots
+\log(\phi_{k-1}/\phi_k)\\
+\end{bmatrix}\\
+
+a(\eta) &= -\log(\phi_k)\\
+b(y) &= 1
+\end{align*}
+
+To derive the hypothesis function we first note that 
+
+\begin{align*}
+\eta_i &= \log\frac{\phi_i}{\phi_k}\\
+e^\eta_i &= \frac{\phi_i}{\phi_k}\\
+\phi_ke^\eta_i &= \phi_i\\
+\phi_k \sum{i=1}^k e^{\eta_i} &= \sum_{i=1}^k \phi_i = 1\\
+\phi_i = \frac{e^{\eta_i}}{\sum{j=1}^k e^{\eta_j}}
+\end{align*}
+
+And using our third assumption about linearity yields the final hypothesis
+
+\begin{align*}
+h_\theta(x) &= E[T(y)|x;\theta]\\
+            &= \begin{bmatrix}
+             \phi_1\\
+             \phi_2\\
+             \vdots\\
+             phi_{k-1}\\
+            \end{bmatrix}
+            &= \begin{bmatrix}
+            \frac{e^{\theta_1^Tx}}{\sum{j=1}^k e^{\theta_j^Tx}}\\
+            \frac{e^{\theta_2^Tx}}{\sum{j=1}^k e^{\theta_j^Tx}}\\
+            \vdots
+            \frac{e^{\theta_{k-1}^Tx}}{\sum{j=1}^k e^{\theta_j^Tx}}\\
+            \end{bmatrix}
+\end{align*}
+
+\section{Generative Learning Algorithms}
+
+Thus far the learning algorithms we have studied have attempted to model $p(y|x;\theta)$ we call such algorithms \textbf{discriminative}, linear and logistic regression are such examples. In this section we will examine algorithms that attempt to model $p(x|y)$ and $p(y)$ which we call \textbf{generative} algorithms. We call $p(y)$ \textbf{class prior}. Once we have learned the class prior and the features we can use Bayes rule to derive the distribution on $y$ given $x$
+\begin{align*}
+p(x) &= p(x|y=1)p(y=1) + p(x|y=0)p(y=0)\\ 
+p(y|x) &= \frac{p(x|y)p(y)}{p(x)}\\
+\end{align*}
+
+When it comes to making a particular prediction we can drop the denominator to reduce the calculation time.
+
+\section{Gaussian Discriminant Analysis}
+
+The first algorithm that we will look at is Gaussian Discriminant Analysis (GDA). In this model well assume that $p(x|y)$ is distributed according to a multivariate normal distribution. 
+
+\subsection{The Multivariate Normal Distribution}
+The Gaussian distribution extended to $n$ dimensions is parameterized by a mean vector $\mu \in \mathbb{R}^n$ and covariance matrix $\Sigma \in \mathbb{R}^{n \times n}$ where $\Sigma$ is symmetric and positive semi definite. The density is given by
+
+\begin{align*}
+p(x;\mu,\Sigma) =  \frac{1}{(2\pi)^{n/2} |\Sigma|^{1/2}} \exp(-\frac{1}{2}(x - \mu)^T \Sigma^{-1}(x - \mu))\\
+\end{align*}
+
+We have the mean given by
+\begin{align*}
+E[X] = \mu
+\end{align*}
+
+and the covariance which generalizes the notion of an expected value is given by Cov$(x) = \Sigma$. If we let $\Sigma$ be the identity matrix and $\mu$ be the zero vector then we obtain the standard normal distribution
+
+\subsection{The GDA Model}
+
+Assume we have a classification problem in which the features $x$ are continuous valued variables, we then model $p(x|y)$ using the following distributions
+
+\begin{align*}
+y &~ \text{Bernoulli}(\phi)\\
+x|y=0 &~ \script{N}(\mu_0,\Sigma)\\
+x|y=1 &~ \script{N}(\mu_1,\Sigma)\\
+\end{align*}
+
+writing out the distributions formally we have
+\begin{align*}
+p(y) &= \phi^y(1-\phi)^{1-y}\\
+p(x|y=0) &=  \frac{1}{(2\pi)^{n/2} |\Sigma|^{1/2}} \exp(-\frac{1}{2}(x - \mu_0)^T \Sigma^{-1}(x - \mu_0))\\
+p(x|y=1) &=  \frac{1}{(2\pi)^{n/2} |\Sigma|^{1/2}} \exp(-\frac{1}{2}(x - \mu_1)^T \Sigma^{-1}(x - \mu_1))\\
+\end{align*}
+
+Here the parameters of the model are $\phi,\Sigma,\mu_0,\mu_1$. We can then take the log likelihood of the data
+
+\begin{align*}
+l(\phi,\Sigma,\mu_0,\mu_1) &= \log \prod_{i=1}^m p(\idx{x}{i},\idx{y}{i}; \phi,\mu_0,\mu_1,\Sigma)\\
+&= \log \prod_{i=1}^m p(\idx{x}{i}|\idx{y}{i};\mu_0,\mu_1,\Sigma)p(\idx{y}{i};\phi)\\
+\end{align*}
+
+Maximizing $l$ with respect to each parameter gives
+\begin{align*}
+\phi &= \frac{1}{m} \sum_{i=1}^m \idctr{\idx{y}{i} = 1}\\
+\mu_0 &= \frac{\sum_{i=1}^m \idctr{\idx{y}{i} = 0} \idx{x}{i}}{\sum_{i=1}^m \idctr{\idx{y}{i} = 0}}\\
+\mu_1 &= \frac{\sum_{i=1}^m \idctr{\idx{y}{i} = 1} \idx{x}{i}}{\sum_{i=1}^m \idctr{\idx{y}{i} = 1}}\\
+\Sigma &= \frac{1}{m} \sum_{i=1}^m (\idx{x}{i} - \mu_{\idx{y}{i}})(\idx{x}{i} - \mu_{\idx{y}{i}})^T
+\end{align*}
+
+It turns out that if we define $p(y=1|x;\phi,\mu_0,\mu_1,\Sigma)$ as a function of $x$ then it can be expressed as
+\begin{align*}
+p(y=1|x;\phi,\mu_0,\mu_1,\Sigma) = \frac{1}{1+\exp(-\theta^Tx)}
+\end{align*}
+where $\theta$ is a function of $\phi,\mu_0,\mu_1,\Sigma$. This is exactly the form of the logistic regression. This leads us to ask when GDA performs better than logistic regression. GDA has the advantage of taking less time to train . The accuracy of the algorithm is fully determined by how closely $p(x|y)$ follows a Gaussian. If the fit is close then GDA is the most efficient choice of algorithm, however if the data is not Gaussian then logistic regression will perform better.
+
+\section{Naive Bayes}
+\end{document}
